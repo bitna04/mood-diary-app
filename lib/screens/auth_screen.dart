@@ -92,7 +92,7 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      final result = await AuthService.signInWithGoogle();
+      await AuthService.signInWithGoogle();
     } on FirebaseAuthException catch (e) {
       String message;
       switch (e.code) {
