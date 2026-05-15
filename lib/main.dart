@@ -4,6 +4,7 @@ import 'services/storage_service.dart';
 import 'services/theme_service.dart';
 import 'themes/app_theme.dart';
 import 'widgets/mood_record_card.dart';
+import 'screens/stats_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
   // Controller for the note text field
   final TextEditingController _noteController = TextEditingController();
 
@@ -157,9 +160,66 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _HomeBody(
+            noteController: _noteController,
+            selectedMood: _selectedMood,
+            moods: _moods,
+            records: _records,
+            isDarkMode: isDarkMode,
+            onMoodSelected: (mood) => setState(() => _selectedMood = mood),
+            onSaveMood: _saveMood,
+            onDeleteRecord: _deleteRecord,
+          ),
+          StatsScreen(records: _records),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+}
+
+class _HomeBody extends StatelessWidget {
+  final TextEditingController noteController;
+  final String? selectedMood;
+  final List<Map<String, dynamic>> moods;
+  final List<MoodRecord> records;
+  final bool isDarkMode;
+  final Function(String) onMoodSelected;
+  final VoidCallback onSaveMood;
+  final Function(MoodRecord) onDeleteRecord;
+
+  const _HomeBody({
+    required this.noteController,
+    required this.selectedMood,
+    required this.moods,
+    required this.records,
+    required this.isDarkMode,
+    required this.onMoodSelected,
+    required this.onSaveMood,
+    required this.onDeleteRecord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
             // Mood Selection Section
             Container(
               padding: const EdgeInsets.all(20),
@@ -193,18 +253,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                     ),
-                    itemCount: _moods.length,
+                    itemCount: moods.length,
                     itemBuilder: (context, index) {
-                      final mood = _moods[index];
+                      final mood = moods[index];
                       final moodId = mood['id'] as String;
-                      final isSelected = _selectedMood == moodId;
+                      final isSelected = selectedMood == moodId;
 
                       return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedMood = moodId;
-                          });
-                        },
+                        onTap: () => onMoodSelected(moodId),
                         child: Container(
                           decoration: BoxDecoration(
                             color: isSelected
@@ -273,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _noteController,
+                    controller: noteController,
                     maxLines: 4,
                     style: TextStyle(
                       color: isDarkMode ? Colors.white : Colors.black87,
@@ -312,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _saveMood,
+                      onPressed: onSaveMood,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDarkMode
                             ? Colors.pink.shade400
@@ -355,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // Scrollable list of mood records
-            _records.isEmpty
+            records.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Text(
@@ -371,25 +427,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 : ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _records.length,
+                    itemCount: records.length,
                     itemBuilder: (context, index) {
-                      final record = _records[index];
+                      final record = records[index];
                       return MoodRecordCard(
                         record: record,
-                        onDelete: () => _deleteRecord(record),
+                        onDelete: () => onDeleteRecord(record),
                       );
                     },
                   ),
             const SizedBox(height: 20),
           ],
         ),
-      ),
-    );
+      );
+    }
   }
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-}
