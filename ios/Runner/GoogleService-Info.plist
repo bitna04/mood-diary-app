@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>734076911463-rrfjfr7ncb260hs5ruciikjbkn2392f5.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.734076911463-rrfjfr7ncb260hs5ruciikjbkn2392f5</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDIlOVVC7lfF4VKQmZi1sTehvxNnx-3Zn0</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.moodDiary</string>
+	<string>com.bitna.moodDiary</string>
 	<key>PROJECT_ID</key>
 	<string>mood-diary-app-b5f5b</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:734076911463:ios:3e3c0836fda1b98223b9c2</string>
+	<string>1:734076911463:ios:821b5e195dbb0a9123b9c2</string>
 </dict>
 </plist>
