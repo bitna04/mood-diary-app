@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import '../models/mood_record.dart';
 
 /// Widget to display a single mood record in a card format
-/// Shows mood icon, note, date and delete button
+/// Shows mood icon, note, date, reflect and delete buttons
 class MoodRecordCard extends StatelessWidget {
   final MoodRecord record;
   final VoidCallback onDelete;
+  final VoidCallback onReflect;
 
   const MoodRecordCard({
     super.key,
     required this.record,
     required this.onDelete,
+    required this.onReflect,
   });
 
   /// Get the appropriate icon for the mood ID
@@ -129,19 +131,31 @@ class MoodRecordCard extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
-            // Delete button
-            Align(
-              alignment: Alignment.bottomRight,
-              child: TextButton.icon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Delete'),
-                style: TextButton.styleFrom(
-                  foregroundColor: isDarkMode
-                      ? Colors.pink.shade400
-                      : Colors.pink.shade600,
+            // Reflect and Delete buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton.icon(
+                  onPressed: onReflect,
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text('Reflect'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isDarkMode
+                        ? Colors.pink.shade400
+                        : Colors.pink.shade600,
+                  ),
                 ),
-              ),
+                TextButton.icon(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Delete'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isDarkMode
+                        ? Colors.pink.shade400
+                        : Colors.pink.shade600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

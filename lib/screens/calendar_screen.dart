@@ -6,8 +6,13 @@ import '../widgets/mood_record_card.dart';
 
 class CalendarScreen extends StatefulWidget {
   final List<MoodRecord> records;
+  final Function(MoodRecord) onReflect;
 
-  const CalendarScreen({super.key, required this.records});
+  const CalendarScreen({
+    super.key,
+    required this.records,
+    required this.onReflect,
+  });
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -179,6 +184,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 return MoodRecordCard(
                   record: record,
                   onDelete: () {},
+                  onReflect: () => widget.onReflect(record),
                 );
               },
             ),

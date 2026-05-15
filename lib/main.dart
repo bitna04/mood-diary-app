@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'models/mood_record.dart';
 import 'services/storage_service.dart';
 import 'services/theme_service.dart';
 import 'services/security_service.dart';
+import 'services/auth_service.dart';
+import 'services/firestore_service.dart';
 import 'themes/app_theme.dart';
 import 'widgets/mood_record_card.dart';
+import 'widgets/ai_reflection_sheet.dart';
 import 'screens/stats_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/lock_screen.dart';
+import 'screens/auth_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await StorageService.init();
   await ThemeService.init();
   await SecurityService.init();
@@ -49,20 +58,49 @@ class _MoodDiaryAppState extends State<MoodDiaryApp> {
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: _themeMode,
-      home: _isLocked
-          ? LockScreen(
+      home: StreamBuilder<User?>(
+        stream: AuthService.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: Colors.pink.shade300,
+                ),
+              ),
+            );
+          }
+
+          if (snapshot.data == null) {
+            return const AuthScreen();
+          }
+
+          if (_isLocked) {
+            return LockScreen(
               mode: LockScreenMode.unlock,
               onSuccess: () => setState(() => _isLocked = false),
-            )
-          : HomeScreen(onThemeToggle: _toggleTheme),
+            );
+          }
+
+          return HomeScreen(
+            onThemeToggle: _toggleTheme,
+            user: snapshot.data!,
+          );
+        },
+      ),
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
+  final User user;
 
-  const HomeScreen({super.key, required this.onThemeToggle});
+  const HomeScreen({
+    super.key,
+    required this.onThemeToggle,
+    required this.user,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -93,19 +131,26 @@ class _HomeScreenState extends State<HomeScreen> {
   // List of saved mood records
   List<MoodRecord> _records = [];
 
+  late StreamSubscription<List<MoodRecord>> _recordsSubscription;
+
   @override
   void initState() {
     super.initState();
     _pinEnabled = SecurityService.isPinEnabled();
-    _loadRecords();
+    _recordsSubscription = FirestoreService.recordsStream(widget.user.uid)
+        .listen((records) {
+      if (mounted) {
+        setState(() => _records = records);
+      }
+    });
+    _runMigrationIfNeeded();
   }
 
-  /// Load all saved records from storage
-  Future<void> _loadRecords() async {
-    final records = await StorageService.getAllRecords();
-    setState(() {
-      _records = records;
-    });
+  Future<void> _runMigrationIfNeeded() async {
+    final local = await StorageService.getAllRecords();
+    if (local.isNotEmpty) {
+      await FirestoreService.migrateLocalRecords(widget.user.uid, local);
+    }
   }
 
   /// Save the current mood entry
@@ -125,16 +170,14 @@ class _HomeScreenState extends State<HomeScreen> {
       date: DateTime.now(),
     );
 
-    // Save to storage
-    final success = await StorageService.saveMoodRecord(record);
+    try {
+      await FirestoreService.addRecord(widget.user.uid, record);
 
-    if (success) {
-      // Clear the form and refresh the list
+      // Clear the form
       setState(() {
         _selectedMood = null;
         _noteController.clear();
       });
-      await _loadRecords();
 
       // Show success message
       if (mounted) {
@@ -145,14 +188,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving mood: $e')),
+        );
+      }
     }
   }
 
   /// Delete a mood record
   Future<void> _deleteRecord(MoodRecord record) async {
-    final success = await StorageService.deleteRecord(record);
-    if (success) {
-      await _loadRecords();
+    try {
+      await FirestoreService.deleteRecord(widget.user.uid, record.id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting mood: $e')),
+        );
+      }
     }
   }
 
@@ -176,6 +230,26 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: widget.onThemeToggle,
             tooltip: isDarkMode ? 'Light Mode' : 'Dark Mode',
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              if (value == 'signout') {
+                await AuthService.signOut();
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'signout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 18, color: Colors.pink.shade400),
+                    const SizedBox(width: 8),
+                    const Text('Sign Out'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: IndexedStack(
@@ -190,9 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
             onMoodSelected: (mood) => setState(() => _selectedMood = mood),
             onSaveMood: _saveMood,
             onDeleteRecord: _deleteRecord,
+            onReflect: _showReflectionSheet,
           ),
           StatsScreen(records: _records),
-          CalendarScreen(records: _records),
+          CalendarScreen(records: _records, onReflect: _showReflectionSheet),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -210,7 +285,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _noteController.dispose();
+    _recordsSubscription.cancel();
     super.dispose();
+  }
+
+  void _showReflectionSheet(MoodRecord record) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AiReflectionSheet(record: record),
+    );
   }
 
   void _showLockSettings() {
@@ -286,6 +371,7 @@ class _HomeBody extends StatelessWidget {
   final Function(String) onMoodSelected;
   final VoidCallback onSaveMood;
   final Function(MoodRecord) onDeleteRecord;
+  final Function(MoodRecord) onReflect;
 
   const _HomeBody({
     required this.noteController,
@@ -296,6 +382,7 @@ class _HomeBody extends StatelessWidget {
     required this.onMoodSelected,
     required this.onSaveMood,
     required this.onDeleteRecord,
+    required this.onReflect,
   });
 
   @override
@@ -516,6 +603,7 @@ class _HomeBody extends StatelessWidget {
                       return MoodRecordCard(
                         record: record,
                         onDelete: () => onDeleteRecord(record),
+                        onReflect: () => onReflect(record),
                       );
                     },
                   ),
