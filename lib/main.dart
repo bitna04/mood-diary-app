@@ -5,6 +5,7 @@ import 'services/theme_service.dart';
 import 'themes/app_theme.dart';
 import 'widgets/mood_record_card.dart';
 import 'screens/stats_screen.dart';
+import 'screens/calendar_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -174,6 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onDeleteRecord: _deleteRecord,
           ),
           StatsScreen(records: _records),
+          CalendarScreen(records: _records),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -182,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Calendar'),
         ],
       ),
     );
