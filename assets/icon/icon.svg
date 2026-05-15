@@ -1,0 +1,54 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pinkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFB6D9;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FF95C5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF7BA8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lightPinkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD4E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFC0D9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#FFF5F8"/>
+
+  <!-- Main circle with gradient -->
+  <circle cx="256" cy="256" r="220" fill="url(#pinkGradient)"/>
+
+  <!-- Heart shape inside circle -->
+  <path d="M 256 320
+    C 256 320, 190 270, 190 220
+    C 190 195, 205 180, 220 180
+    C 235 180, 250 190, 256 200
+    C 262 190, 277 180, 292 180
+    C 307 180, 322 195, 322 220
+    C 322 270, 256 320, 256 320 Z"
+    fill="#FFFFFF" opacity="0.9"/>
+
+  <!-- Subtle inner glow circle -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="url(#lightPinkGradient)" stroke-width="15" opacity="0.5"/>
+
+  <!-- Decorative smaller hearts around main circle -->
+  <path d="M 120 180
+    C 120 170, 125 160, 135 160
+    C 142 160, 148 165, 120 185
+    C 92 165, 98 160, 105 160
+    C 115 160, 120 170, 120 180 Z"
+    fill="url(#pinkGradient)" opacity="0.4"/>
+
+  <path d="M 392 180
+    C 392 170, 387 160, 377 160
+    C 370 160, 364 165, 392 185
+    C 420 165, 414 160, 407 160
+    C 397 160, 392 170, 392 180 Z"
+    fill="url(#pinkGradient)" opacity="0.4"/>
+
+  <path d="M 256 420
+    C 256 410, 250 400, 240 400
+    C 233 400, 227 405, 256 425
+    C 285 405, 279 400, 272 400
+    C 262 400, 256 410, 256 420 Z"
+    fill="url(#pinkGradient)" opacity="0.4"/>
+</svg>
