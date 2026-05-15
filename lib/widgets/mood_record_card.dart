@@ -39,6 +39,8 @@ class MoodRecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
@@ -49,10 +51,9 @@ class MoodRecordCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.pink.shade50,
-              Colors.pink.shade100,
-            ],
+            colors: isDarkMode
+                ? [const Color(0xFF2A2A2A), const Color(0xFF1F1F1F)]
+                : [Colors.pink.shade50, Colors.pink.shade100],
           ),
         ),
         padding: const EdgeInsets.all(16),
@@ -68,11 +69,13 @@ class MoodRecordCard extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDarkMode ? const Color(0xFF3A3A3A) : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.pink.shade200,
+                        color: isDarkMode
+                            ? Colors.black26
+                            : Colors.pink.shade200,
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -94,7 +97,9 @@ class MoodRecordCard extends StatelessWidget {
                       record.getFormattedDate(),
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.pink.shade700,
+                        color: isDarkMode
+                            ? Colors.pink.shade300
+                            : Colors.pink.shade700,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -102,7 +107,9 @@ class MoodRecordCard extends StatelessWidget {
                       '${record.date.hour}:${record.date.minute.toString().padLeft(2, '0')}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.pink.shade500,
+                        color: isDarkMode
+                            ? Colors.pink.shade400
+                            : Colors.pink.shade500,
                       ),
                     ),
                   ],
@@ -116,7 +123,9 @@ class MoodRecordCard extends StatelessWidget {
                 record.note,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade700,
+                  color: isDarkMode
+                      ? const Color(0xFFBDBDBD)
+                      : Colors.grey.shade700,
                   height: 1.5,
                 ),
               ),
@@ -128,7 +137,9 @@ class MoodRecordCard extends StatelessWidget {
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: const Text('Delete'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.pink.shade600,
+                  foregroundColor: isDarkMode
+                      ? Colors.pink.shade400
+                      : Colors.pink.shade600,
                 ),
               ),
             ),

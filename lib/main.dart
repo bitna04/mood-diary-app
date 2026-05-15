@@ -1,35 +1,56 @@
 import 'package:flutter/material.dart';
 import 'models/mood_record.dart';
 import 'services/storage_service.dart';
+import 'services/theme_service.dart';
+import 'themes/app_theme.dart';
 import 'widgets/mood_record_card.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
+  await ThemeService.init();
   runApp(const MoodDiaryApp());
 }
 
-class MoodDiaryApp extends StatelessWidget {
+class MoodDiaryApp extends StatefulWidget {
   const MoodDiaryApp({super.key});
+
+  @override
+  State<MoodDiaryApp> createState() => _MoodDiaryAppState();
+}
+
+class _MoodDiaryAppState extends State<MoodDiaryApp> {
+  late ThemeMode _themeMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeMode = ThemeService.getSavedThemeMode();
+  }
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+    ThemeService.saveThemeMode(_themeMode);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mood Diary',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.pink.shade300,
-          brightness: Brightness.light,
-        ),
-      ),
-      home: const HomeScreen(),
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: _themeMode,
+      home: HomeScreen(onThemeToggle: _toggleTheme),
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback onThemeToggle;
+
+  const HomeScreen({super.key, required this.onThemeToggle});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -121,13 +142,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mood Diary'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.pink.shade300,
-        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: widget.onThemeToggle,
+            tooltip: isDarkMode ? 'Light Mode' : 'Dark Mode',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -139,17 +167,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Colors.pink.shade100, Colors.pink.shade200],
+                  colors: isDarkMode
+                      ? [const Color(0xFF2A2A2A), const Color(0xFF1F1F1F)]
+                      : [Colors.pink.shade100, Colors.pink.shade200],
                 ),
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'How are you feeling today?',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -179,13 +209,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? Colors.pink.shade300
-                                : Colors.white,
+                                : (isDarkMode
+                                    ? const Color(0xFF3A3A3A)
+                                    : Colors.white),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
                                 color: isSelected
                                     ? Colors.pink.shade400
-                                    : Colors.grey.shade300,
+                                    : (isDarkMode
+                                        ? Colors.black26
+                                        : Colors.grey.shade300),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -229,33 +263,48 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Add a note (optional)',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _noteController,
                     maxLines: 4,
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Write what\'s on your mind...',
-                      hintStyle: TextStyle(color: Colors.grey.shade500),
+                      hintStyle: TextStyle(
+                        color: isDarkMode
+                            ? const Color(0xFF9E9E9E)
+                            : Colors.grey.shade500,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.pink.shade200, width: 2),
+                        borderSide: BorderSide(
+                          color: isDarkMode
+                              ? Colors.pink.shade600
+                              : Colors.pink.shade200,
+                          width: 2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.pink.shade400, width: 2),
+                        borderSide: BorderSide(
+                          color: Colors.pink.shade400,
+                          width: 2,
+                        ),
                       ),
                       filled: true,
-                      fillColor: Colors.pink.shade50,
+                      fillColor: isDarkMode
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.pink.shade50,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -265,7 +314,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ElevatedButton(
                       onPressed: _saveMood,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink.shade300,
+                        backgroundColor: isDarkMode
+                            ? Colors.pink.shade400
+                            : Colors.pink.shade300,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -295,7 +346,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
+                    color: isDarkMode
+                        ? const Color(0xFFE0E0E0)
+                        : Colors.grey.shade800,
                   ),
                 ),
               ),
@@ -308,7 +361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text(
                       'No mood entries yet. Start by recording your mood!',
                       style: TextStyle(
-                        color: Colors.grey.shade500,
+                        color: isDarkMode
+                            ? const Color(0xFF9E9E9E)
+                            : Colors.grey.shade500,
                         fontSize: 14,
                       ),
                     ),
