@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'models/mood_record.dart';
 import 'services/storage_service.dart';
 import 'services/theme_service.dart';
+import 'services/security_service.dart';
 import 'themes/app_theme.dart';
 import 'widgets/mood_record_card.dart';
 import 'screens/stats_screen.dart';
 import 'screens/calendar_screen.dart';
+import 'screens/lock_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
   await ThemeService.init();
+  await SecurityService.init();
   runApp(const MoodDiaryApp());
 }
 
@@ -23,11 +26,13 @@ class MoodDiaryApp extends StatefulWidget {
 
 class _MoodDiaryAppState extends State<MoodDiaryApp> {
   late ThemeMode _themeMode;
+  bool _isLocked = false;
 
   @override
   void initState() {
     super.initState();
     _themeMode = ThemeService.getSavedThemeMode();
+    _isLocked = SecurityService.isPinEnabled();
   }
 
   void _toggleTheme() {
@@ -44,7 +49,12 @@ class _MoodDiaryAppState extends State<MoodDiaryApp> {
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: _themeMode,
-      home: HomeScreen(onThemeToggle: _toggleTheme),
+      home: _isLocked
+          ? LockScreen(
+              mode: LockScreenMode.unlock,
+              onSuccess: () => setState(() => _isLocked = false),
+            )
+          : HomeScreen(onThemeToggle: _toggleTheme),
     );
   }
 }
@@ -60,6 +70,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  bool _pinEnabled = false;
 
   // Controller for the note text field
   final TextEditingController _noteController = TextEditingController();
@@ -85,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _pinEnabled = SecurityService.isPinEnabled();
     _loadRecords();
   }
 
@@ -155,6 +167,11 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: Icon(_pinEnabled ? Icons.lock : Icons.lock_open),
+            onPressed: _showLockSettings,
+            tooltip: 'Lock Settings',
+          ),
+          IconButton(
             icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.onThemeToggle,
             tooltip: isDarkMode ? 'Light Mode' : 'Dark Mode',
@@ -194,6 +211,69 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _showLockSettings() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _LockSettingsSheet(
+        pinEnabled: _pinEnabled,
+        onPinToggled: () {
+          Navigator.pop(ctx);
+          if (!_pinEnabled) {
+            // Navigate to setup PIN
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LockScreen(
+                  mode: LockScreenMode.setup,
+                  onSuccess: () {
+                    Navigator.pop(context);
+                    setState(() => _pinEnabled = true);
+                  },
+                  onCancel: () => Navigator.pop(context),
+                ),
+              ),
+            );
+          } else {
+            // Verify current PIN then remove
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LockScreen(
+                  mode: LockScreenMode.unlock,
+                  onSuccess: () {
+                    SecurityService.removePin().then((_) {
+                      Navigator.pop(context);
+                      setState(() => _pinEnabled = false);
+                    });
+                  },
+                  onCancel: () => Navigator.pop(context),
+                ),
+              ),
+            );
+          }
+        },
+        onChangePin: () {
+          Navigator.pop(ctx);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LockScreen(
+                mode: LockScreenMode.change,
+                onSuccess: () => Navigator.pop(context),
+                onCancel: () => Navigator.pop(context),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -445,3 +525,128 @@ class _HomeBody extends StatelessWidget {
       );
     }
   }
+
+class _LockSettingsSheet extends StatefulWidget {
+  final bool pinEnabled;
+  final VoidCallback onPinToggled;
+  final VoidCallback onChangePin;
+
+  const _LockSettingsSheet({
+    required this.pinEnabled,
+    required this.onPinToggled,
+    required this.onChangePin,
+  });
+
+  @override
+  State<_LockSettingsSheet> createState() => _LockSettingsSheetState();
+}
+
+class _LockSettingsSheetState extends State<_LockSettingsSheet> {
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _biometricEnabled = SecurityService.isBiometricEnabled();
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final available = await SecurityService.isBiometricAvailable();
+    if (mounted) {
+      setState(() => _biometricAvailable = available);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Container(
+              width: 48,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              'Lock Settings',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+          // PIN toggle
+          SwitchListTile(
+            title: Text(
+              'Enable PIN Lock',
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+            subtitle: Text(
+              widget.pinEnabled ? 'PIN is enabled' : 'No PIN set',
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+            ),
+            value: widget.pinEnabled,
+            onChanged: (_) => widget.onPinToggled(),
+          ),
+          // Change PIN
+          if (widget.pinEnabled)
+            ListTile(
+              title: Text(
+                'Change PIN',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              ),
+              onTap: widget.onChangePin,
+            ),
+          // Biometric toggle
+          if (widget.pinEnabled && _biometricAvailable)
+            SwitchListTile(
+              title: Text(
+                'Face ID / Touch ID',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              subtitle: Text(
+                _biometricEnabled ? 'Biometric enabled' : 'Use PIN only',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
+              value: _biometricEnabled,
+              onChanged: (value) {
+                setState(() => _biometricEnabled = value);
+                SecurityService.setBiometricEnabled(value);
+              },
+            ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
