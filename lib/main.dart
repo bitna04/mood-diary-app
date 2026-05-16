@@ -6,6 +6,7 @@ import 'models/mood_record.dart';
 import 'services/storage_service.dart';
 import 'services/theme_service.dart';
 import 'services/security_service.dart';
+import 'services/onboarding_service.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'themes/app_theme.dart';
@@ -15,6 +16,7 @@ import 'screens/stats_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/lock_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -23,11 +25,17 @@ void main() async {
   await StorageService.init();
   await ThemeService.init();
   await SecurityService.init();
-  runApp(const MoodDiaryApp());
+  final onboardingComplete = await OnboardingService.init();
+  runApp(MoodDiaryApp(onboardingComplete: onboardingComplete));
 }
 
 class MoodDiaryApp extends StatefulWidget {
-  const MoodDiaryApp({super.key});
+  final bool onboardingComplete;
+
+  const MoodDiaryApp({
+    super.key,
+    required this.onboardingComplete,
+  });
 
   @override
   State<MoodDiaryApp> createState() => _MoodDiaryAppState();
@@ -35,12 +43,14 @@ class MoodDiaryApp extends StatefulWidget {
 
 class _MoodDiaryAppState extends State<MoodDiaryApp> {
   late ThemeMode _themeMode;
+  late bool _onboardingComplete;
   bool _isLocked = false;
 
   @override
   void initState() {
     super.initState();
     _themeMode = ThemeService.getSavedThemeMode();
+    _onboardingComplete = widget.onboardingComplete;
     _isLocked = SecurityService.isPinEnabled();
   }
 
@@ -61,6 +71,15 @@ class _MoodDiaryAppState extends State<MoodDiaryApp> {
       home: StreamBuilder<User?>(
         stream: AuthService.authStateChanges(),
         builder: (context, snapshot) {
+          if (!_onboardingComplete) {
+            return OnboardingScreen(
+              onComplete: () async {
+                await OnboardingService.setComplete();
+                setState(() => _onboardingComplete = true);
+              },
+            );
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Scaffold(
               body: Center(

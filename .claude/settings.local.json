@@ -38,7 +38,8 @@
       "Bash(firebase --help)",
       "Bash(firebase apps:list *)",
       "Bash(firebase apps:android:sha:create *)",
-      "Bash(firebase apps:sdkconfig *)"
+      "Bash(firebase apps:sdkconfig *)",
+      "Bash(tee /tmp/android_run.log)"
     ]
   }
 }
