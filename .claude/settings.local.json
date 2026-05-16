@@ -16,7 +16,29 @@
       "Bash(awk *)",
       "Bash(pod install *)",
       "Bash(flutter build *)",
-      "Bash(open *)"
+      "Bash(open *)",
+      "Bash(xcrun simctl *)",
+      "Bash(flutter clean *)",
+      "Bash(python3 *)",
+      "Bash(dart analyze *)",
+      "Bash(pkill -f \"flutter run\")",
+      "Bash(adb shell *)",
+      "Bash(adb pull *)",
+      "Read(//tmp/**)",
+      "Bash(flutter doctor *)",
+      "Read(//Users/shinekim/.android/**)",
+      "Read(//Users/shinekim/**)",
+      "Bash(keytool -list -v -keystore /Users/shinekim/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(java -version)",
+      "Bash(openssl version *)",
+      "Bash(openssl pkcs12 *)",
+      "Bash(openssl x509 *)",
+      "Bash(firebase projects:list)",
+      "Bash(firebase --help)",
+      "Bash(firebase apps:list *)",
+      "Bash(firebase apps:android:sha:create *)",
+      "Bash(firebase apps:sdkconfig *)"
     ]
   }
 }

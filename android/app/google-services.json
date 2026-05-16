@@ -12,7 +12,20 @@
           "package_name": "com.example.mood_diary"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "734076911463-7djtavu2l27liuksvl0v16an7qtfk16b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mood_diary",
+            "certificate_hash": "5a0a240dc1782276f1dd97327a4aa6a022cee023"
+          }
+        },
+        {
+          "client_id": "734076911463-iki25d94i5mj3frt917b71g3horqnmnc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAMBjwIjMcEBILNqdcWp3bbfmTpAJ8jTRk"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "734076911463-iki25d94i5mj3frt917b71g3horqnmnc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "734076911463-r737ccbgcom5mq0cngk64lq0v8cqcdjj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.moodDiary"
+              }
+            }
+          ]
         }
       }
     }
