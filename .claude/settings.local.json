@@ -39,7 +39,10 @@
       "Bash(firebase apps:list *)",
       "Bash(firebase apps:android:sha:create *)",
       "Bash(firebase apps:sdkconfig *)",
-      "Bash(tee /tmp/android_run.log)"
+      "Bash(tee /tmp/android_run.log)",
+      "Bash(tee /tmp/app_test.log)",
+      "Bash(pkill -f \"flutter run.*verbose\")",
+      "Bash(dart run *)"
     ]
   }
 }
