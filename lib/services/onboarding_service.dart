@@ -12,4 +12,8 @@ class OnboardingService {
   static Future<void> setComplete() async {
     await _prefs.setBool(_key, true);
   }
+
+  static Future<void> reset() async {
+    await _prefs.remove(_key);
+  }
 }
